@@ -1,0 +1,26 @@
+import QtQuick
+
+Item {
+    Column {
+
+        topPadding: 15
+        spacing: 10
+        width: 230
+        anchors.horizontalCenter: parent.horizontalCenter
+
+        Text {
+            text: "Tasks"
+            font.pixelSize: 24
+            font.bold: true
+            color: "black"
+        }
+
+        Repeater {
+            model: 4
+
+            Task {
+
+            }
+        }
+    }
+}
