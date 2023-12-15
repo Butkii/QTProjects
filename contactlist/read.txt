@@ -1,0 +1,5 @@
+contact list app
+Concepts:
+- native android
+- Java with C++
+- set up
