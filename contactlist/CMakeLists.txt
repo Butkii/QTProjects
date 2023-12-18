@@ -10,6 +10,8 @@ qt_standard_project_setup()
 
 qt_add_executable(appcontactlist
     main.cpp
+    mylistmodel.h
+    mylistmodel.cpp
     android/src/com/contactlist/MainActivity.java
     android/AndroidManifest.xml
     android/build.gradle

@@ -65,6 +65,7 @@ android {
     }
     defaultConfig {
         resourceConfigurations += ['en']
+        minSdkVersion 19
     }
     androidResources {
         noCompress 'rcc'
