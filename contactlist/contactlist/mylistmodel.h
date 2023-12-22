@@ -18,9 +18,10 @@ class ContactListModel : public QAbstractItemModel
 
 public:
     enum ListRoles {
-        NameRole = Qt::UserRole + 1,
-        PhoneNumberRole = Qt::UserRole + 2,
-        SelectedRole = Qt::UserRole + 3,
+        NameRole,
+        PhoneNumberRole,
+        SelectedRole,
+        SectionRole
     };
 
     ContactListModel(QObject* parent = 0);
@@ -46,6 +47,7 @@ public slots:
     int get(const QString& phoneNumber);
     int getByName(const QString& name);
     void setProperty(int index, const QString& property, const QVariant &value);
+    void setProperty(const QString& property, const QVariant &value);
     void add(const QString& name, const QString& number);
     void update(const QString &name, const QString &number);
 

@@ -6,6 +6,7 @@ Window {
     width: 640; height: 480
     visible: true
     title: qsTr("Contact List")
+    property int contactsSelected: 0
 
     Item {
         id: root
@@ -14,6 +15,19 @@ Window {
         Item {
             id: list
             anchors.fill: parent
+
+            Behavior on x { NumberAnimation { duration: 250; easing.type: Easing.OutQuad } }
+            states: [
+                State {
+                    name: "slideIn"
+                    PropertyChanges { target: list; x: 0 }
+                },
+                State {
+                    name: "slideOut"
+                    PropertyChanges { target: list; anchors.fill: ""; x: -600 }
+                }
+            ]
+
             Row {
                 id: header
                 height: 50; spacing: 80
@@ -38,25 +52,21 @@ Window {
                     MouseArea {
                         anchors.fill: parent;
                         onClicked: {
-                            for (var i = 0; i < contacts.model.count(); i++) {
-                                if (contacts.model.get(i).selected) {
-                                    list.opacity = 0.3;
-                                    Qt.createComponent("Popup.qml").createObject(root,  { cancel: () => {
-                                                                                         list.opacity = 1;
-                                                                                         for (var i = 0; i < contacts.model.count(); i++) {
-                                                                                            contacts.model.setProperty(i, "selected", false);
-                                                                                        }}, confirm: ()=> {
-                                                                                            list.opacity = 1
-                                                                                            for (var i = 0; i < contacts.model.count(); i++) {
-                                                                                                if (contacts.model.get(i).selected) {
-                                                                                                    contacts.model.remove(contacts.model.get(i).phoneNumber);
-                                                                                                    i--;
-                                                                                                }
-
-                                                                                            }
-                                    }})
-                                    break;
-                                }
+                            if (contactsSelected > 0) {
+                                list.opacity = 0.3
+                                Qt.createComponent("Popup.qml").createObject(root,  { cancel: function() {
+                                    list.opacity = 1
+                                    contacts.model.setProperty("selected", false)
+                                    contactsSelected = 0
+                                }, confirm: function() {
+                                    list.opacity = 1
+                                    for (var i = 0; i < contacts.model.count(); i++) {
+                                        if (contacts.model.get(i).selected) {
+                                            contacts.model.remove(contacts.model.get(i).phoneNumber)
+                                            i--
+                                        }
+                                    }
+                                }})
                             }
                         }
                     }
@@ -73,8 +83,21 @@ Window {
                     height: 50; width: parent.width; radius: 10
                     anchors { left: parent.left; leftMargin: 20}
 
+                    MouseArea {
+                        anchors.fill: parent;
+                        onClicked:  {
+                            list.state = "slideOut"
+                            const comp = Qt.createComponent("EditContactView.qml").createObject(
+                                       root, {
+                                           nameText: name, numberText: phoneNumber,
+                                           submit: (newName, newNumber)=>{ contacts.model.update(newName, newNumber) }
+                                       })
+                        }
+                    }
+
                     Row {
                         spacing: 20
+
                         Rectangle {
                             anchors { verticalCenter: parent.verticalCenter; verticalCenterOffset: 10}
                             height: 48; width: 48; radius: 24
@@ -82,21 +105,16 @@ Window {
 
                             Text {
                                 anchors.centerIn: parent
-                                text: name?.[0] || ""
+                                text: selected ? "/" : section
                                 font { pixelSize: 24; bold: true }
-                                visible: !selected
-                            }
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "/";
-                                font { pixelSize: 24; bold: true }
-                                visible: selected
                             }
 
                             MouseArea {
                                 anchors.fill: parent
-                                onClicked: contacts.model.setProperty(index, "selected", !selected)
+                                onClicked: {
+                                    selected ? contactsSelected-- : contactsSelected++
+                                    contacts.model.setProperty(index, "selected", !selected)
+                                }
                             }
                         }
 
@@ -104,37 +122,23 @@ Window {
                             anchors { verticalCenter: parent.verticalCenter; verticalCenterOffset: 10}
                             text: "<b>" + name + "</b><br>" + phoneNumber
                             font.pixelSize: 18
-
-                            MouseArea {
-                                anchors.fill: parent;
-                                onClicked:  {
-                                    Qt.createComponent("EditContactView.qml").createObject(
-                                               root, {
-                                                   nameText: name,
-                                                   numberText: phoneNumber,
-                                                   submit: (newName, newNumber)=>{ contacts.model.update(newName, newNumber); }
-                                               })
-                                }
-                            }
                         }
                     }
 
-
                 }
 
-                section.criteria: ViewSection.FirstCharacter;
-                section.property: "name"
+                section.criteria: ViewSection.FullString
+                section.property: "section"
                 section.delegate: Rectangle {
                     width: ListView.view.width; height: 35
                     color: "lavender"
-                    required property string section
-
                     Text {
                         padding: 5; leftPadding: 15
-                        text: parent.section
+                        text: section
                         font { bold: true; pixelSize: 20 }
                     }
                 }
+
             }
 
             Rectangle {
@@ -148,7 +152,7 @@ Window {
                     anchors.centerIn: parent
                 }
                 MouseArea {
-                    anchors.fill: parent;
+                    anchors.fill: parent
                     onClicked: Qt.createComponent("NewContactView.qml").createObject(root, {submit: (name, number)=>{contacts.model.add(name, number)}})
                 }
             }

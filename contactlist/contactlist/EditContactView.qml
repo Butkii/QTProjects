@@ -3,11 +3,38 @@ import QtQuick
 Rectangle {
     id: root
     width: parent.width; height: parent.height
-    anchors.horizontalCenter: parent.horizontalCenter
+    x: 800
     property var submit
     property alias nameText: name.text
     property alias numberText: phoneNumber.text
     property bool editable: false
+    MouseArea { anchors.fill: parent }
+    Behavior on x { NumberAnimation { duration: 250; easing.type: Easing.OutQuad } }
+    states: [
+        State {
+            name: "slideIn"
+            PropertyChanges {
+                target: root
+                x: 0
+            }
+        },
+        State {
+            name: "slideOut"
+            PropertyChanges {
+                target: root
+                x: 800
+            }
+        }
+    ]
+
+    Component.onCompleted: {
+       root.state = "slideIn"
+    }
+
+    Timer {
+        id: destroy; interval: 400; running: false; repeat: false
+        onTriggered: root.destroy()
+    }
 
     Column {
         topPadding: 15
@@ -16,19 +43,19 @@ Rectangle {
 
         Row {
             spacing: 80
-            anchors { horizontalCenter: parent.horizontalCenter; top: root.bottom; topMargin: 80 }
+            anchors { horizontalCenter: parent.horizontalCenter }
 
             Image {
                 source: "assets/back.png"
                 height:25; width: 25;
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: root.destroy()
+                    onClicked: { root.state = "slideOut"; destroy.running = true }
                 }
             }
 
             Text {
-                text: "New Contact"
+                text: editable ? "Edit Contact" : "Contact Info"
                 font { pixelSize: 24; bold: true }
             }
 
@@ -47,7 +74,17 @@ Rectangle {
 
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: editable = !editable
+                    onClicked: {
+                        editable = !editable
+                        if (!editable) {
+                            if (name.activeFocus) {
+                                name.focus = false
+                            }
+                            if (phoneNumber.activeFocus) {
+                                phoneNumber.focus = false
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -60,12 +97,12 @@ Rectangle {
             visible: !editable
         }
 
-        TextInput {
+        TextEdit {
             id: name
             font.pixelSize: 18
             width: root.width - 100
             visible: editable
-            maximumLength: 30
+
             Text {
                 text: "Name"
                 color: "#aaa"
@@ -83,13 +120,13 @@ Rectangle {
             visible: !editable
         }
 
-        TextInput {
+        TextEdit {
             id: phoneNumber
             font.pixelSize: 18
             height: 150; width: root.width - 100
             visible: editable
             inputMethodHints: Qt.ImhDigitsOnly
-            maximumLength: 15
+
             Text {
                 text: "PhoneNumber"
                 color: "#aaa"
@@ -113,8 +150,12 @@ Rectangle {
             MouseArea {
                 anchors.fill: parent
                 onClicked: {
+                    phoneNumber.text = phoneNumber.preeditText
+                    phoneNumber.focus = false
+                    name.text = name.preeditText
+                    name.focus = false
                     submit(name.text, phoneNumber.text)
-                    root.destroy()
+                    root.state = "slideOut"; destroy.running = true
                 }
             }
         }

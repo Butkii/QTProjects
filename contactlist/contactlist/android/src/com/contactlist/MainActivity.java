@@ -2,6 +2,7 @@ package com.contactlist;
 
 import android.content.ContentProviderOperation;
 import android.content.ContentProviderResult;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.OperationApplicationException;
 import android.database.Cursor;
@@ -15,6 +16,7 @@ import android.os.RemoteException;
 import android.provider.ContactsContract;
 import android.util.Log;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -138,7 +140,9 @@ public class MainActivity extends QtActivity {
                             }
                         }
                     }
+
                     contacts = newList;
+
                 });
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -191,18 +195,17 @@ public class MainActivity extends QtActivity {
                 //.withValue(RawContacts.AGGREGATION_MODE, RawContacts.AGGREGATION_MODE_DEFAULT)
                 .build());
 
-        // first and last names
         op_list.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
                 .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
                 .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
-                .withValue(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME, name)
+                .withValue(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, name)
                 .build());
 
         op_list.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
                 .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
                 .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
                 .withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, number)
-                .withValue(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_HOME)
+                .withValue(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE)
                 .build());
 
         try {
@@ -226,7 +229,7 @@ public class MainActivity extends QtActivity {
         String[] params = new String[] {
                 name,
                 ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE,
-                String.valueOf(ContactsContract.CommonDataKinds.Phone.TYPE_HOME)
+                String.valueOf(ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE)
         };
 
         // Create an update operation for the contact
@@ -241,6 +244,36 @@ public class MainActivity extends QtActivity {
         } catch (Exception e) {
             // Handle exceptions, typically caused by permission issues or other errors
             e.printStackTrace();
+        }
+    }
+
+    public void updateContactNameByPhoneNumber(String phoneNumber, String newName) {
+        Log.d("TAG contacts", "update: " + newName + phoneNumber);
+        ContentResolver contentResolver = getContentResolver();
+        ArrayList<ContentProviderOperation> ops = new ArrayList<>();
+
+        // Define the criteria for updating the contact
+        String where = ContactsContract.CommonDataKinds.Phone._ID + "=? AND " +
+                ContactsContract.Data.MIMETYPE + "='" +
+                ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE + "'";
+
+        // Set the parameters for the selection criteria
+        String[] params = new String[] {
+                ContactsContract.CommonDataKinds.Phone._ID,
+        };
+        // Create an update operation for the contact
+        ops.add(ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
+                .withSelection(where, params)
+                .withValue(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME_PRIMARY, newName)
+                .build());
+        try {
+            // Apply the batch update to the Contacts Provider
+            ContentProviderResult[] result = contentResolver.applyBatch(ContactsContract.AUTHORITY, ops);
+            Log.d("TAG contacts", "SUCCESS: " + newName + phoneNumber + Arrays.toString(result));
+        } catch (Exception e) {
+            // Handle exceptions, typically caused by permission issues or other errors
+            e.printStackTrace();
+            Log.d("TAG contacts", "FAIL: " + newName + phoneNumber);
         }
     }
 }

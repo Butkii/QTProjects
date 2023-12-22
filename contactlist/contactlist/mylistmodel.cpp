@@ -6,6 +6,17 @@
 static ContactListModel *instance;
 QVariantMap uniqueContacts;
 
+QString formatPhoneNumber(const QString& phoneNumber) {
+    QString result;
+    for (const QChar c : phoneNumber) {
+        if (c.isDigit() || c == '.') {
+            result.append(c);
+        }
+    }
+
+    return result;
+}
+
 ContactListModel::ContactListModel(QObject* parent) : QAbstractItemModel(parent) {
     instance = this;
     QJniObject activity = QNativeInterface::QAndroidApplication::context();
@@ -29,6 +40,8 @@ extern "C" JNIEXPORT void JNICALL Java_com_contactlist_MainActivity_updateContac
         qDebug() << "update list" << contactsList << contactsList.begin().key() << contactsList.begin().value().toString();
         int index = test->getByName(contactsList.begin().value().toString());
         test->setProperty(index, "phoneNumber", contactsList.begin().key());
+        index = test->get(contactsList.begin().key());
+        test->setProperty(index, "name", contactsList.begin().value().toString());
     }
 }
 
@@ -43,6 +56,7 @@ QVariant ContactListModel::data(const QModelIndex &index, int role) const {
         case NameRole: return item.name;
         case PhoneNumberRole: return item.phoneNumber;
         case SelectedRole: return item.selected;
+        case SectionRole: return item.name.toUpper()[0];
     }
 
     return QVariant();
@@ -73,13 +87,8 @@ int ContactListModel::columnCount(const QModelIndex &parent) const {
 void ContactListModel::insert(int index, const QString& name, const QString& number, bool selected) {
     if (index < 0 || index > m_items.count())
         return;
-    QString result;
-    for (const QChar c : qAsConst(number)) {
-        if (c.isDigit() || c == '.') {
-            result.append(c);
-        }
-    }
-    Contact item = {name, result, selected};
+
+    Contact item = {name, formatPhoneNumber(number), selected};
 
     if (!uniqueContacts.contains(number)) {
         beginInsertRows(QModelIndex(), index, index);
@@ -92,7 +101,7 @@ void ContactListModel::insert(int index, const QString& name, const QString& num
 void ContactListModel::append(const QString& name, const QString& number) {
     int insertionPoint = count();
     for (int i = 0; i < count(); i++) {
-        if(name < m_items[i].name) {
+        if(name.toUpper() < m_items[i].name) {
             insertionPoint = i;
             break;
         }
@@ -147,26 +156,24 @@ void ContactListModel::remove(int index, int count) {
 void ContactListModel::setProperty(int index, const QString &property, const QVariant &value) {
     if (index < 0 || index > m_items.count())
         return;
-    qDebug("enter");
     Contact item = m_items.at(index);
-    qDebug() << item.name << " " << item.phoneNumber << " " << item.selected;
     if (property == "name") {
         item.name = value.toString();
     } else if (property == "phoneNumber") {
-        QString result;
-        for (const QChar c : value.toString()) {
-            if (c.isDigit() || c == '.') {
-                result.append(c);
-            }
-        }
-        item.phoneNumber = result;
+        item.phoneNumber = formatPhoneNumber(value.toString());
     } else if (property == "selected") {
         item.selected = value.toBool();
     }
-    qDebug() << item.name << " " << item.phoneNumber << " " << item.selected;
 
     remove(index);
     insert(index, item.name, item.phoneNumber, item.selected);
+}
+
+void ContactListModel::setProperty(const QString &property, const QVariant &value) {
+    for (int i = 0; i < count(); i++) {
+        if (get(i).value(property) != value.toString())
+            setProperty(i, property, value);
+    }
 }
 
 void ContactListModel::clear() {
@@ -186,18 +193,20 @@ QVariantMap ContactListModel::get(int index)
 
 int ContactListModel::get(const QString& phoneNumber)
 {
+    QString formatted = formatPhoneNumber(phoneNumber);
     for (int i = 0; i < m_items.size(); ++i) {
-        if (m_items[i].phoneNumber == phoneNumber) {
+        if (m_items[i].phoneNumber == formatted) {
             return i;
         }
     }
+
     return -1;
 }
 
 int ContactListModel::getByName(const QString& name)
 {
     for (int i = 0; i < m_items.size(); ++i) {
-        if (m_items[i].name == name) {
+        if (m_items[i].name.compare(name) == 0) {
             return i;
         }
     }
@@ -213,6 +222,7 @@ QHash<int, QByteArray> ContactListModel::roleNames() const {
     roles[NameRole] = "name";
     roles[PhoneNumberRole] = "phoneNumber";
     roles[SelectedRole] = "selected";
+    roles[SectionRole] = "section";
     return roles;
 }
 
@@ -227,3 +237,5 @@ void ContactListModel::update(const QString& name, const QString& number) {
     QJniObject activity = QNativeInterface::QAndroidApplication::context();
     activity.callMethod<void>("updateContact", "(Ljava/lang/String;Ljava/lang/String;)V", QJniObject::fromString(name).object<jstring>(), QJniObject::fromString(number).object<jstring>());
 }
+
+

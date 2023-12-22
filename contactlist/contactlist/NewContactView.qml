@@ -3,10 +3,29 @@ import QtQuick
 Rectangle {
     id: root
     width: parent.width; height: parent.height
-    anchors.horizontalCenter: parent.horizontalCenter
+    x: 800
     property var submit
     property alias nameText: name.text
     property alias numberText: phoneNumber.text
+    MouseArea { anchors.fill: parent }
+    Behavior on x { NumberAnimation { duration: 250; easing.type: Easing.OutQuad } }
+    states: [
+        State {
+            name: "slideIn"
+            PropertyChanges { target: root; x: 0 }
+        },
+        State {
+            name: "slideOut"
+            PropertyChanges { target: root; x: 600 }
+        }
+    ]
+
+    Component.onCompleted: { root.state = "slideIn" }
+
+    Timer {
+        id: destroy; interval: 300; running: false; repeat: false
+        onTriggered: root.destroy()
+    }
 
     Column {
         topPadding: 15
@@ -19,10 +38,10 @@ Rectangle {
 
             Image {
                 source: "assets/back.png"
-                height:25; width: 25;
+                height: 25; width: 25
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: root.destroy()
+                    onClicked: { root.state = "slideOut"; destroy.running = true }
                 }
             }
 
@@ -32,12 +51,11 @@ Rectangle {
             }
         }
 
-        TextInput {
+        TextEdit {
             id: name
             font.pixelSize: 18
             width: root.width - 100
-            visible: editable
-            maximumLength: 30
+
             Text {
                 text: "Name"
                 color: "#aaa"
@@ -47,13 +65,12 @@ Rectangle {
             }
         }
 
-        TextInput {
+        TextEdit {
             id: phoneNumber
             font.pixelSize: 18
             height: 150; width: root.width - 100
-            visible: editable
             inputMethodHints: Qt.ImhDigitsOnly
-            maximumLength: 15
+
             Text {
                 text: "PhoneNumber"
                 color: "#aaa"
@@ -67,6 +84,7 @@ Rectangle {
             height: 30; width: 100; radius: 20
             anchors.horizontalCenter: parent.horizontalCenter
             border.color:"black"
+
             Text {
                 text: "Save"
                 font.pixelSize: 16
@@ -76,8 +94,12 @@ Rectangle {
             MouseArea {
                 anchors.fill: parent
                 onClicked: {
+                    phoneNumber.text = phoneNumber.preeditText
+                    phoneNumber.focus = false
+                    name.text = name.preeditText
+                    name.focus = false
                     submit(name.text, phoneNumber.text)
-                    root.destroy()
+                    root.state = "slideOut"; destroy.running = true
                 }
             }
         }
