@@ -198,7 +198,7 @@ public class MainActivity extends QtActivity {
         op_list.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
                 .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
                 .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
-                .withValue(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, name)
+                .withValue(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME, name)
                 .build());
 
         op_list.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)

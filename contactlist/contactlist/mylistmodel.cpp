@@ -101,7 +101,7 @@ void ContactListModel::insert(int index, const QString& name, const QString& num
 void ContactListModel::append(const QString& name, const QString& number) {
     int insertionPoint = count();
     for (int i = 0; i < count(); i++) {
-        if(name.toUpper() < m_items[i].name) {
+        if(name.toUpper().at(0) < m_items[i].name.toUpper().at(0)) {
             insertionPoint = i;
             break;
         }

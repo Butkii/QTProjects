@@ -126,7 +126,7 @@ Rectangle {
             height: 150; width: root.width - 100
             visible: editable
             inputMethodHints: Qt.ImhDigitsOnly
-
+            onTextChanged: if (numberText.length > 15) { numberText = numberText.slice(0,15); cursorPosition = numberText.length }
             Text {
                 text: "PhoneNumber"
                 color: "#aaa"
