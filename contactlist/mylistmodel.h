@@ -3,25 +3,29 @@
 
 #include <QAbstractItemModel>
 #include <QQmlEngine>
+#include <QTimer>
 
 typedef struct {
     QString name;
     QString phoneNumber;
+    bool selected;
 } Contact;
 
-class MyListModel : public QAbstractItemModel
+class ContactListModel : public QAbstractItemModel
 {
     Q_OBJECT
     QML_ELEMENT
 
 public:
     enum ListRoles {
-        NameRole = Qt::UserRole + 1,
-        PhoneNumberRole = Qt::UserRole + 2,
+        NameRole,
+        PhoneNumberRole,
+        SelectedRole,
+        SectionRole
     };
 
-    MyListModel(QObject* parent = 0);
-    ~MyListModel() override;
+    ContactListModel(QObject* parent = 0);
+    ~ContactListModel() override;
 
     QVariant data(const QModelIndex &index, int role) const override;
     Qt::ItemFlags flags(const QModelIndex &index) const override;
@@ -31,15 +35,21 @@ public:
     int columnCount(const QModelIndex &parent = QModelIndex()) const override;
 
 public slots:
-    void insert(int index, const QString& name, const QString& number);
+    void insert(int index, const QString& name, const QString& number, bool selected = false);
     void append(const QString& name, const QString& number);
-    void append(QList<QVariantMap> items);
+    void append(QList<QVariant> items);
+    void remove(const QString& phoneNumber);
     void remove(int index);
     void remove(int index, int count);
     void clear();
     int count();
     QVariantMap get(int index);
-    void setProperty(int index, QString property, QString value);
+    int get(const QString& phoneNumber);
+    int getByName(const QString& name);
+    void setProperty(int index, const QString& property, const QVariant &value);
+    void setProperty(const QString& property, const QVariant &value);
+    void add(const QString& name, const QString& number);
+    void update(const QString &name, const QString &number);
 
 protected:
     QHash<int, QByteArray> roleNames() const override;
@@ -47,6 +57,5 @@ protected:
 private:  
     QList<Contact> m_items;
 };
-
 
 #endif // MYLISTMODEL_H

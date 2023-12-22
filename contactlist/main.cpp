@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
 
-    qmlRegisterType<MyListModel>("MyListModel", 1, 0, "MyListModel");
+    qmlRegisterType<ContactListModel>("ContactListModel", 1, 0, "ContactListModel");
 
     const QUrl url(u"qrc:/contactlist/Main.qml"_qs);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
