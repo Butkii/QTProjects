@@ -20,8 +20,8 @@ QString formatPhoneNumber(const QString& phoneNumber) {
 ContactListModel::ContactListModel(QObject* parent) : QAbstractItemModel(parent) {
     instance = this;
     QJniObject activity = QNativeInterface::QAndroidApplication::context();
-    long thisAddress = (long) this;
-    activity.callMethod<void>("fetchContacts", thisAddress);
+    uintptr_t thisAddress = (uintptr_t) this;
+    activity.callMethod<void>("fetchContacts", (long) thisAddress);
 }
 
 ContactListModel::~ContactListModel() {}
@@ -51,12 +51,12 @@ QVariant ContactListModel::data(const QModelIndex &index, int role) const {
     if (index.row() >= m_items.size() || index.row() < 0)
         return QVariant();
 
-    const Contact& item = m_items[index.row()];
+    const QVariantMap& item = m_items[index.row()];
     switch (role) {
-        case NameRole: return item.name;
-        case PhoneNumberRole: return item.phoneNumber;
-        case SelectedRole: return item.selected;
-        case SectionRole: return item.name.toUpper()[0];
+        case NameRole: return item.value("name");
+        case PhoneNumberRole: return item.value("phoneNumber");
+        case SelectedRole: return item.value("selected");
+        case SectionRole: return item.value("name").toString().toUpper()[0];
     }
 
     return QVariant();
@@ -88,7 +88,10 @@ void ContactListModel::insert(int index, const QString& name, const QString& num
     if (index < 0 || index > m_items.count())
         return;
 
-    Contact item = {name, formatPhoneNumber(number), selected};
+    QVariantMap item;
+    item["name"] = name;
+    item["phoneNumber"] = formatPhoneNumber(number);
+    item["selected"] = selected;
 
     if (!uniqueContacts.contains(number)) {
         beginInsertRows(QModelIndex(), index, index);
@@ -101,7 +104,7 @@ void ContactListModel::insert(int index, const QString& name, const QString& num
 void ContactListModel::append(const QString& name, const QString& number) {
     int insertionPoint = count();
     for (int i = 0; i < count(); i++) {
-        if(name.toUpper().at(0) < m_items[i].name.toUpper().at(0)) {
+        if(name.toUpper().at(0) < m_items[i].value("name").toString().toUpper().at(0)) {
             insertionPoint = i;
             break;
         }
@@ -130,7 +133,7 @@ void ContactListModel::remove(const QString& phoneNumber)
     int index = get(phoneNumber);
     if (index != -1) {
         QJniObject activity = QNativeInterface::QAndroidApplication::context();
-        activity.callMethod<void>("deleteContact", "(Ljava/lang/String;)V", QJniObject::fromString(m_items.at(index).phoneNumber).object<jstring>());
+        activity.callMethod<void>("deleteContact", "(Ljava/lang/String;)V",QJniObject::fromString(m_items.at(index).value("phoneNumber").toString()).object<jstring>());
         remove(index, 1);
     }
 }
@@ -140,7 +143,7 @@ void ContactListModel::remove(int index, int count) {
         return;
 
     for (int i = 0; i < count; i++) {
-        uniqueContacts.remove(m_items.at(index + i).phoneNumber);
+        uniqueContacts.remove(m_items.at(index + i).value("phoneNumber").toString());
     }
     if (index + count > m_items.count()) {
         beginRemoveRows(QModelIndex(), index, index);
@@ -156,17 +159,17 @@ void ContactListModel::remove(int index, int count) {
 void ContactListModel::setProperty(int index, const QString &property, const QVariant &value) {
     if (index < 0 || index > m_items.count())
         return;
-    Contact item = m_items.at(index);
+    QVariantMap item = m_items.at(index);
     if (property == "name") {
-        item.name = value.toString();
+        item.value("name") = value.toString();
     } else if (property == "phoneNumber") {
-        item.phoneNumber = formatPhoneNumber(value.toString());
+        item.value("phoneNumber") = formatPhoneNumber(value.toString());
     } else if (property == "selected") {
-        item.selected = value.toBool();
+        item.value("selected") = value.toBool();
     }
 
     remove(index);
-    insert(index, item.name, item.phoneNumber, item.selected);
+    insert(index, item.value("name").toString(), item.value("phoneNumber").toString(), item.value("selected").toBool());
 }
 
 void ContactListModel::setProperty(const QString &property, const QVariant &value) {
@@ -187,15 +190,14 @@ QVariantMap ContactListModel::get(int index)
     if(index < 0 || index >= m_items.count()) {
         return QVariantMap();
     }
-    Contact item = m_items.at(index);
-    return QVariantMap({{"name", item.name}, {"phoneNumber", item.phoneNumber}, {"selected", item.selected}});
+    return m_items.at(index);
 }
 
 int ContactListModel::get(const QString& phoneNumber)
 {
     QString formatted = formatPhoneNumber(phoneNumber);
     for (int i = 0; i < m_items.size(); ++i) {
-        if (m_items[i].phoneNumber == formatted) {
+        if (m_items[i].value("phoneNumber").toString() == formatted) {
             return i;
         }
     }
@@ -206,7 +208,7 @@ int ContactListModel::get(const QString& phoneNumber)
 int ContactListModel::getByName(const QString& name)
 {
     for (int i = 0; i < m_items.size(); ++i) {
-        if (m_items[i].name.compare(name) == 0) {
+        if (m_items[i].value("name").toString().compare(name) == 0) {
             return i;
         }
     }

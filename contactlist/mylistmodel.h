@@ -5,12 +5,6 @@
 #include <QQmlEngine>
 #include <QTimer>
 
-typedef struct {
-    QString name;
-    QString phoneNumber;
-    bool selected;
-} Contact;
-
 class ContactListModel : public QAbstractItemModel
 {
     Q_OBJECT
@@ -55,7 +49,7 @@ protected:
     QHash<int, QByteArray> roleNames() const override;
 
 private:  
-    QList<Contact> m_items;
+    QList<QVariantMap> m_items;
 };
 
 #endif // MYLISTMODEL_H
