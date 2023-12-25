@@ -1,22 +1,14 @@
 package com.contactlist;
 
 import android.content.ContentProviderOperation;
-import android.content.ContentProviderResult;
-import android.content.ContentValues;
-import android.content.Intent;
-import android.content.OperationApplicationException;
 import android.database.Cursor;
 import android.database.ContentObserver;
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.RemoteException;
 import android.provider.ContactsContract;
 import android.util.Log;
-
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -24,17 +16,12 @@ import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Executor;
 import android.content.ContentResolver;
-
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.qtproject.qt.android.bindings.QtActivity;
 
 public class MainActivity extends QtActivity {
-    private final Executor executor = Executors.newSingleThreadExecutor();
-    private final Handler handler = new Handler(Looper.getMainLooper());
     private List<Map<String, String>> contacts = new ArrayList<Map<String, String>>();
-
     native static void updateContacts(String updates, long ptr);
     private long classPointer = 0;
 
@@ -47,9 +34,12 @@ public class MainActivity extends QtActivity {
     }
 
     public void fetchContacts(long ptr) {
-        Log.d("MYINT", "value: " + ptr);
-        if (classPointer == 0) classPointer = ptr;
+        Executor executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
         ContentResolver contentResolver = getContentResolver();
+
+        if (classPointer == 0) classPointer = ptr;
+
         executor.execute(() -> {
             try {
                 Cursor cursor = contentResolver.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
@@ -92,57 +82,33 @@ public class MainActivity extends QtActivity {
                 }
 
                 handler.post(() -> {
-                    Log.d("TAG contacts current", newList.toString());
-                    Log.d("TAG contacts current", contacts.toString());
-
-                    if (contacts.isEmpty()) {
-                        Log.d("TAG Contacts", "empty");
+                    if (contacts.isEmpty() || contacts.size() < newList.size()) {
                         JSONArray contactsList = new JSONArray(newList);
                         Map<String, Object> update = new HashMap<>();
                         update.put("action", "add");
                         update.put("contacts", contactsList);
-                        JSONObject json = new JSONObject(update);
-                        Log.d("TAG contactslist", json.toString());
-                        updateContacts(json.toString(), classPointer);
-                    } else {
-                        if (contacts.size() < newList.size()) {
-                            Log.d("TAG Contacts", "added");
-                            JSONArray contactsList = new JSONArray(newList);
-                            Map<String, Object> update = new HashMap<>();
-                            update.put("action", "add");
-                            update.put("contacts", contactsList);
-                            JSONObject json = new JSONObject(update);
-                            updateContacts(json.toString(), classPointer);
-                        }
-                        else if (contacts.size() > newList.size()) {
-                            Log.d("TAG Contacts", "deleted");
-                            for (int i = 0; i < contacts.size(); i++) {
-                                if (!newList.contains(contacts.get(i))) {
-                                    Map<String, Object> update = new HashMap<>();
-                                    update.put("action", "delete");
-                                    update.put("contacts", contacts.get(i));
-                                    JSONObject json = new JSONObject(update);
-                                    updateContacts(json.toString(), classPointer);
-                                }
-                            }
-                        }
-                        else {
-                            Log.d("TAG Contacts", "updated");
-                            for (int i = 0; i < contacts.size(); i++) {
-                                if (!newList.get(i).equals(contacts.get(i))) {
-                                    Log.d("TAG Contacts", newList.get(i).toString() + contacts.get(i).toString());
-                                    Map<String, Object> update = new HashMap<>();
-                                    update.put("action", "update");
-                                    update.put("contacts", newList.get(i));
-                                    JSONObject json = new JSONObject(update);
-                                    updateContacts(json.toString(), classPointer);
-                                }
+                        updateContacts(new JSONObject(update).toString(), classPointer);
+                    } else if (contacts.size() > newList.size()) {
+                        for (int i = 0; i < contacts.size(); i++) {
+                            if (!newList.contains(contacts.get(i))) {
+                                Map<String, Object> update = new HashMap<>();
+                                update.put("action", "delete");
+                                update.put("contacts", contacts.get(i));
+                                updateContacts(new JSONObject(update).toString(), classPointer);
                             }
                         }
                     }
-
+                    else {
+                        for (int i = 0; i < contacts.size(); i++) {
+                            if (!newList.get(i).equals(contacts.get(i))) {
+                                Map<String, Object> update = new HashMap<>();
+                                update.put("action", "update");
+                                update.put("contacts", newList.get(i));
+                                updateContacts(new JSONObject(update).toString(), classPointer);
+                            }
+                        }
+                    }
                     contacts = newList;
-
                 });
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -158,13 +124,11 @@ public class MainActivity extends QtActivity {
         @Override
         public void onChange(boolean selfChange) {
             super.onChange(selfChange);
-            Log.d("TAG contacts", "Contacts changed");
             fetchContacts(classPointer);
         }
     }
 
     public void deleteContact(String phoneNumber) {
-        Log.d("TAG", phoneNumber);
         ContentResolver cr = getContentResolver();
         Uri contactUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNumber));
         try (Cursor cur = cr.query(contactUri, null, null, null, null)) {
@@ -181,7 +145,6 @@ public class MainActivity extends QtActivity {
                     }
                 } while (cur.moveToNext());
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -192,7 +155,6 @@ public class MainActivity extends QtActivity {
         op_list.add(ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
                 .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, null)
                 .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, null)
-                //.withValue(RawContacts.AGGREGATION_MODE, RawContacts.AGGREGATION_MODE_DEFAULT)
                 .build());
 
         op_list.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
@@ -215,65 +177,58 @@ public class MainActivity extends QtActivity {
         }
     }
 
-    public void updateContact(String name, String newPhoneNumber) {
-        Log.d("TAG contacts", "update: " + name + newPhoneNumber);
+    public void updateContactNumber(String name, String newPhoneNumber) {
         ContentResolver contentResolver = getContentResolver();
         ArrayList<ContentProviderOperation> ops = new ArrayList<>();
 
-        // Define the criteria for updating the contact
-        String where = ContactsContract.Data.DISPLAY_NAME + " = ? AND " +
-                ContactsContract.Data.MIMETYPE + " = ? AND " +
-                String.valueOf(ContactsContract.CommonDataKinds.Phone.TYPE) + " = ? ";
-
-        // Set the parameters for the selection criteria
-        String[] params = new String[] {
-                name,
-                ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE,
-                String.valueOf(ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE)
-        };
-
-        // Create an update operation for the contact
         ops.add(ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
-                .withSelection(where, params)
+                .withSelection(ContactsContract.Data.DISPLAY_NAME, new String[] { name })
+                .withSelection(ContactsContract.Data.MIMETYPE, new String[] { ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE })
+                .withSelection(ContactsContract.CommonDataKinds.Phone.TYPE, new String[] { String.valueOf(ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE) })
                 .withValue(ContactsContract.CommonDataKinds.Phone.DATA, newPhoneNumber)
                 .build());
 
         try {
-            // Apply the batch update to the Contacts Provider
             contentResolver.applyBatch(ContactsContract.AUTHORITY, ops);
         } catch (Exception e) {
-            // Handle exceptions, typically caused by permission issues or other errors
             e.printStackTrace();
         }
     }
 
-    public void updateContactNameByPhoneNumber(String phoneNumber, String newName) {
-        Log.d("TAG contacts", "update: " + newName + phoneNumber);
+    public void updateContactName(String phoneNumber, String newName) {
         ContentResolver contentResolver = getContentResolver();
+        long rawContactId = 0;
+
+        Cursor cursor = contentResolver.query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                new String[]{ContactsContract.CommonDataKinds.Phone._ID, ContactsContract.CommonDataKinds.Phone.RAW_CONTACT_ID},
+                ContactsContract.CommonDataKinds.Phone.NUMBER + " = ?",
+                new String[]{phoneNumber},
+                null
+        );
+
+        if (cursor != null) {
+            try {
+                if (cursor.moveToFirst()) {
+                    do {
+                        rawContactId = cursor.getLong(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.RAW_CONTACT_ID));
+                    } while (cursor.moveToNext());
+                }
+            } finally {
+                cursor.close();
+            }
+        }
+
         ArrayList<ContentProviderOperation> ops = new ArrayList<>();
+        ContentProviderOperation.Builder builder = ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI);
+        builder.withSelection(ContactsContract.Data.CONTACT_ID + "=?" + " AND " + ContactsContract.Data.MIMETYPE + "=?", new String[]{String.valueOf(rawContactId), ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE});
+        builder.withValue(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME, newName);
+        ops.add(builder.build());
 
-        // Define the criteria for updating the contact
-        String where = ContactsContract.CommonDataKinds.Phone._ID + "=? AND " +
-                ContactsContract.Data.MIMETYPE + "='" +
-                ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE + "'";
-
-        // Set the parameters for the selection criteria
-        String[] params = new String[] {
-                ContactsContract.CommonDataKinds.Phone._ID,
-        };
-        // Create an update operation for the contact
-        ops.add(ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
-                .withSelection(where, params)
-                .withValue(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME_PRIMARY, newName)
-                .build());
         try {
-            // Apply the batch update to the Contacts Provider
-            ContentProviderResult[] result = contentResolver.applyBatch(ContactsContract.AUTHORITY, ops);
-            Log.d("TAG contacts", "SUCCESS: " + newName + phoneNumber + Arrays.toString(result));
+            contentResolver.applyBatch(ContactsContract.AUTHORITY, ops);
         } catch (Exception e) {
-            // Handle exceptions, typically caused by permission issues or other errors
             e.printStackTrace();
-            Log.d("TAG contacts", "FAIL: " + newName + phoneNumber);
         }
     }
 }

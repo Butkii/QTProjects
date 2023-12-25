@@ -16,18 +16,6 @@ Window {
             id: list
             anchors.fill: parent
 
-            Behavior on x { NumberAnimation { duration: 250; easing.type: Easing.OutQuad } }
-            states: [
-                State {
-                    name: "slideIn"
-                    PropertyChanges { target: list; x: 0 }
-                },
-                State {
-                    name: "slideOut"
-                    PropertyChanges { target: list; anchors.fill: ""; x: -600 }
-                }
-            ]
-
             Row {
                 id: header
                 height: 50; spacing: 80
@@ -86,8 +74,7 @@ Window {
                     MouseArea {
                         anchors.fill: parent;
                         onClicked:  {
-                            list.state = "slideOut"
-                            const comp = Qt.createComponent("EditContactView.qml").createObject(
+                            const comp = Qt.createComponent("ContactView.qml").createObject(
                                        root, {
                                            nameText: name, numberText: phoneNumber,
                                            submit: (newName, newNumber)=>{ contacts.model.update(newName, newNumber) }
@@ -114,7 +101,6 @@ Window {
                                 onClicked: {
                                     selected ? contactsSelected-- : contactsSelected++
                                     contacts.model.setProperty(index, "selected", !selected)
-
                                 }
                             }
                         }
@@ -127,15 +113,16 @@ Window {
                     }
                 }
 
-                section.criteria: ViewSection.FullString
-                section.property: "section"
-                section.delegate: Rectangle {
-                    width: ListView.view.width; height: 35
-                    color: "lavender"
-                    Text {
-                        padding: 5; leftPadding: 15
-                        text: section
-                        font { bold: true; pixelSize: 20 }
+                section {
+                    criteria: ViewSection.FullString; property: "section"
+                    delegate: Rectangle {
+                        width: ListView.view.width; height: 35
+                        color: "lavender"
+                        Text {
+                            padding: 5; leftPadding: 15
+                            text: section
+                            font { bold: true; pixelSize: 20 }
+                        }
                     }
                 }
             }
@@ -143,7 +130,7 @@ Window {
             Rectangle {
                 height: 50; width: 50; radius: 25
                 color:"black"
-                anchors { right:parent.right; rightMargin: 20; bottom: parent.bottom; bottomMargin: 20 }
+                anchors { right: parent.right; rightMargin: 20; bottom: parent.bottom; bottomMargin: 20 }
                 Text {
                     text: "+"
                     font.pixelSize: 24
@@ -152,7 +139,7 @@ Window {
                 }
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: Qt.createComponent("NewContactView.qml").createObject(root, {submit: (name, number)=>{contacts.model.add(name, number)}})
+                    onClicked: Qt.createComponent("ContactView.qml").createObject(root, {editable: true, submit: (name, number)=>{contacts.model.add(name, number)}})
                 }
             }
         }

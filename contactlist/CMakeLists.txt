@@ -10,8 +10,8 @@ qt_standard_project_setup()
 
 qt_add_executable(appcontactlist
     main.cpp
-    mylistmodel.h
-    mylistmodel.cpp
+    contactlistmodel.h
+    contactlistmodel.cpp
     android/src/com/contactlist/MainActivity.java
     android/AndroidManifest.xml
     android/build.gradle
@@ -22,13 +22,11 @@ qt_add_qml_module(appcontactlist
     URI contactlist
     VERSION 1.0
     QML_FILES Main.qml
-    QML_FILES NewContactView.qml
     RESOURCES assets/delete.svg
     RESOURCES assets/edit.svg
-    RESOURCES assets/edit.png
     RESOURCES assets/back.png
     QML_FILES Popup.qml
-    QML_FILES EditContactView.qml
+    QML_FILES ContactView.qml
 )
 
 set_target_properties(appcontactlist PROPERTIES

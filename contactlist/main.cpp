@@ -1,6 +1,6 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include "mylistmodel.h"
+#include "contactlistmodel.h"
 
 #include <QDebug>
 #include <QJNIObject>
