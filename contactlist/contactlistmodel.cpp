@@ -182,7 +182,6 @@ void ContactListModel::setProperty(const QString &property, const QVariant &valu
     for (int i = 0; i < count(); i++) {
         if (get(i).value(property) != value.toString()) {
             setProperty(i, property, value);
-            break;
         }
     }
 }

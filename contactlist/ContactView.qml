@@ -43,7 +43,7 @@ Rectangle {
             }
 
             Text {
-                text: editable ? "Contact Details" : "Contact Info"
+                text: editable ? "Create/Edit Contact" : "Contact Info"
                 font { pixelSize: 24; bold: true }
             }
 

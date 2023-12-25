@@ -151,19 +151,19 @@ public class MainActivity extends QtActivity {
     }
 
     private void addContact(String name, String number) {
-        ArrayList<ContentProviderOperation> op_list = new ArrayList<ContentProviderOperation>();
-        op_list.add(ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
+        ArrayList<ContentProviderOperation> ops = new ArrayList<>();
+        ops.add(ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
                 .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, null)
                 .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, null)
                 .build());
 
-        op_list.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+        ops.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
                 .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
                 .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
                 .withValue(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME, name)
                 .build());
 
-        op_list.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+        ops.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
                 .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
                 .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
                 .withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, number)
@@ -171,14 +171,13 @@ public class MainActivity extends QtActivity {
                 .build());
 
         try {
-            getContentResolver().applyBatch(ContactsContract.AUTHORITY, op_list);
+            getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     public void updateContactNumber(String name, String newPhoneNumber) {
-        ContentResolver contentResolver = getContentResolver();
         ArrayList<ContentProviderOperation> ops = new ArrayList<>();
 
         ops.add(ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
@@ -189,7 +188,7 @@ public class MainActivity extends QtActivity {
                 .build());
 
         try {
-            contentResolver.applyBatch(ContactsContract.AUTHORITY, ops);
+            getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -220,10 +219,11 @@ public class MainActivity extends QtActivity {
         }
 
         ArrayList<ContentProviderOperation> ops = new ArrayList<>();
-        ContentProviderOperation.Builder builder = ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI);
-        builder.withSelection(ContactsContract.Data.CONTACT_ID + "=?" + " AND " + ContactsContract.Data.MIMETYPE + "=?", new String[]{String.valueOf(rawContactId), ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE});
-        builder.withValue(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME, newName);
-        ops.add(builder.build());
+        ops.add(ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
+                .withSelection(ContactsContract.Data.CONTACT_ID, new String[]{String.valueOf(rawContactId)})
+                .withSelection(ContactsContract.Data.MIMETYPE, new String[]{ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE})
+                .withValue(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME, newName)
+                .build());
 
         try {
             contentResolver.applyBatch(ContactsContract.AUTHORITY, ops);

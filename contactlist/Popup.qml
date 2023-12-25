@@ -57,7 +57,7 @@ Rectangle {
 
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: { confirm(); root.destroy() }
+                    onClicked: { root.destroy(); confirm();  }
                 }
             }
         }

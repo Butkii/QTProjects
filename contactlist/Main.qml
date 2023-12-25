@@ -50,10 +50,10 @@ Window {
                                     list.opacity = 1
                                     for (var i = 0; i < contacts.model.count(); i++) {
                                         if (contacts.model.get(i).selected) {
-                                            contacts.model.remove(contacts.model.get(i).phoneNumber)
-                                            i--
+                                            contacts.model.remove(contacts.model.get(i--).phoneNumber)
                                         }
                                     }
+                                    contactsSelected = 0
                                 }})
                             }
                         }
