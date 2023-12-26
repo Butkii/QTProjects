@@ -3,7 +3,6 @@
 #include <QJsonDocument>
 #include <QGuiApplication>
 
-static ContactListModel *instance;
 QVariantMap uniqueContacts;
 
 QString formatPhoneNumber(const QString& phoneNumber) {
@@ -13,14 +12,12 @@ QString formatPhoneNumber(const QString& phoneNumber) {
             result.append(c);
         }
     }
-
     return result;
 }
 
 ContactListModel::ContactListModel(QObject* parent) : QAbstractItemModel(parent) {
-    instance = this;
     QJniObject activity = QNativeInterface::QAndroidApplication::context();
-    activity.callMethod<void>("fetchContacts", (long) this);
+    activity.callMethod<void>("fetchContacts", (intptr_t) this);
 }
 
 ContactListModel::~ContactListModel() {}
@@ -39,15 +36,16 @@ void ContactListModel::updateContactsOnMainThread(const QVariantMap &update, Con
     QString action = update.value("action").toString();
 
     if (action == "add") {
-        append(update.value("contacts").toList());
+        append(update["contacts"].toList());
     } else if (action == "delete") {
-        remove(update.value("contacts").toMap().begin().key());
+        remove(update["contacts"].toMap()["phoneNumber"].toString());
     } else if (action == "update") {
-        QMap contactsList = update.value("contacts").toMap();
-        int index = getByName(contactsList.begin().value().toString());
-        setProperty(index, "phoneNumber", contactsList.begin().key());
-        index = test->get(contactsList.begin().key());
-        test->setProperty(index, "name", contactsList.begin().value().toString());
+        QMap contactsList = update["contacts"].toMap();
+        qDebug() << "update" << contactsList["name"].toString();
+        int index = getByName(contactsList["name"].toString());
+        setProperty(index, "phoneNumber", contactsList["phoneNumber"].toString());
+        index = test->get(contactsList["phoneNumber"].toString());
+        test->setProperty(index, "name", contactsList["name"].toString());
     }
 }
 
@@ -59,10 +57,10 @@ QVariant ContactListModel::data(const QModelIndex &index, int role) const {
 
     const QVariantMap& item = m_items[index.row()];
     switch (role) {
-        case NameRole: return item.value("name");
-        case PhoneNumberRole: return item.value("phoneNumber");
-        case SelectedRole: return item.value("selected");
-        case SectionRole: return item.value("name").toString().toUpper()[0];
+        case NameRole: return item["name"];
+        case PhoneNumberRole: return item["phoneNumber"];
+        case SelectedRole: return item["selected"];
+        case SectionRole: return item["name"].toString().toUpper()[0];
     }
 
     return QVariant();
@@ -121,8 +119,8 @@ void ContactListModel::append(const QString& name, const QString& number) {
 
 void ContactListModel::append(QList<QVariant> items) {
     for (int i = 0; i < items.count(); i++) {
-        QString name = items.at(i).toMap().last().toString();
-        QString number = items.at(i).toMap().firstKey();
+        QString name = items.at(i).toMap()["name"].toString();
+        QString number = items.at(i).toMap()["phoneNumber"].toString();
         append(name, number);
     }
 }

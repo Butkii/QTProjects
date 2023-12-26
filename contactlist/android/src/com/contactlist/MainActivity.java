@@ -64,7 +64,8 @@ public class MainActivity extends QtActivity {
                                         while (phoneCursor.moveToNext()) {
                                             String phoneNumber = phoneCursor.getString(phoneCursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER));
                                             Map<String, String> contact = new HashMap<>();
-                                            contact.put(phoneNumber, name);
+                                            contact.put("name", name);
+                                            contact.put("phoneNumber", phoneNumber);
                                             newList.add(contact);
                                         }
                                         phoneCursor.close();

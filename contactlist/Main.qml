@@ -42,18 +42,16 @@ Window {
                         onClicked: {
                             if (contactsSelected > 0) {
                                 list.opacity = 0.3
-                                Qt.createComponent("Popup.qml").createObject(root,  { cancel: function() {
-                                    list.opacity = 1
+                                Qt.createComponent("Popup.qml").createObject(root, { cancel: function() {
+                                    list.opacity = 1; contactsSelected = 0
                                     contacts.model.setProperty("selected", false)
-                                    contactsSelected = 0
                                 }, confirm: function() {
-                                    list.opacity = 1
+                                    list.opacity = 1; contactsSelected = 0
                                     for (var i = 0; i < contacts.model.count(); i++) {
                                         if (contacts.model.get(i).selected) {
                                             contacts.model.remove(contacts.model.get(i--).phoneNumber)
                                         }
                                     }
-                                    contactsSelected = 0
                                 }})
                             }
                         }
@@ -75,10 +73,11 @@ Window {
                         anchors.fill: parent;
                         onClicked:  {
                             const comp = Qt.createComponent("ContactView.qml").createObject(
-                                       root, {
-                                           nameText: name, numberText: phoneNumber,
-                                           submit: (newName, newNumber)=>{ contacts.model.update(newName, newNumber) }
-                                       })
+                                root, {
+                                    nameText: name, numberText: phoneNumber,
+                                    submit: (newName, newNumber) => { contacts.model.update(newName, newNumber) }
+                                }
+                            )
                         }
                     }
 

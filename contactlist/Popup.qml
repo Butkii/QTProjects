@@ -8,9 +8,17 @@ Rectangle {
     color: "transparent"
     MouseArea {
         anchors.fill: parent
-        onClicked: { root.destroy(); cancel(); }
+        onClicked: { root.destroy(); cancel() }
     }
-
+    Rectangle {
+        focus: true
+        Keys.onReleased: function(event) {
+            if (event.key === Qt.Key_Back) {
+                event.accepted = true
+                root.destroy(); cancel()
+            }
+        }
+    }
     Rectangle {
         width: 500; height: 200; radius: 40
         anchors.centerIn: parent
