@@ -8,7 +8,15 @@ Rectangle {
     property alias numberText: phoneNumber.text
     property bool editable: false
     MouseArea { anchors.fill: parent }
-
+    Rectangle {
+        focus: true
+        Keys.onReleased: function(event) {
+            if (event.key === Qt.Key_Back) {
+                event.accepted = true
+                root.state = "slideOut"; destroy.running = true
+            }
+        }
+    }
     Behavior on x { NumberAnimation { duration: 250; easing.type: Easing.OutQuad } }
 
     states: [
